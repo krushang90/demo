@@ -1,14 +1,71 @@
 import "dotenv/config";
 import express from "express";
+import session from "express-session";
 import Anthropic from "@anthropic-ai/sdk";
 import path from "path";
 import { fileURLToPath } from "url";
+import { createHash } from "crypto";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const client = new Anthropic();
 
+// Hash helper — passwords are stored as SHA-256 hex in .env
+function sha256(str) {
+  return createHash("sha256").update(str).digest("hex");
+}
+
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "change_this_secret_in_env",
+    resave: false,
+    saveUninitialized: false,
+    cookie: { httpOnly: true, sameSite: "lax", maxAge: 8 * 60 * 60 * 1000 }, // 8h
+  })
+);
+
+// Auth middleware — protects every route except /login and /logout
+function requireAuth(req, res, next) {
+  if (req.session.authenticated) return next();
+  if (req.path.startsWith("/api/")) return res.status(401).json({ error: "Unauthorised" });
+  res.redirect("/login");
+}
+
+// Login page
+app.get("/login", (req, res) => {
+  if (req.session.authenticated) return res.redirect("/");
+  res.sendFile(path.join(__dirname, "public", "login.html"));
+});
+
+// Login submit
+app.post("/login", (req, res) => {
+  const { username, password } = req.body;
+  const validUser = process.env.ADMIN_USERNAME || "admin";
+  const validHash = process.env.ADMIN_PASSWORD_HASH;
+
+  if (!validHash) {
+    return res.status(500).send("ADMIN_PASSWORD_HASH not set in .env");
+  }
+
+  if (username === validUser && sha256(password) === validHash) {
+    req.session.authenticated = true;
+    return res.redirect("/");
+  }
+
+  res.redirect("/login?error=1");
+});
+
+// Logout
+app.get("/logout", (req, res) => {
+  req.session.destroy(() => res.redirect("/login"));
+});
+
+// Protect all routes below this point
+app.use(requireAuth);
+
 app.use(express.static(path.join(__dirname, "public")));
 
 const COMPANY_PROFILES = {

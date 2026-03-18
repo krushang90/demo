@@ -64,6 +64,19 @@
       letter-spacing: 0.3px;
     }
 
+    header .logout {
+      margin-left: auto;
+      font-size: 13px;
+      color: var(--text-muted);
+      text-decoration: none;
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      transition: all 0.15s;
+    }
+
+    header .logout:hover { background: var(--bg); color: var(--text); }
+
     main {
       flex: 1;
       max-width: 760px;
@@ -306,6 +319,7 @@
     <h1>LinkedIn Reply Generator</h1>
   </div>
   <span class="badge">Yashvi</span>
+  <a href="/logout" class="logout">Sign out</a>
 </header>
 
 <main>
