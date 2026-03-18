@@ -4,11 +4,31 @@ import session from "express-session";
 import Anthropic from "@anthropic-ai/sdk";
 import path from "path";
 import { fileURLToPath } from "url";
-import { createHash } from "crypto";
+import { createHash, createDecipheriv, scryptSync } from "crypto";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
-const client = new Anthropic();
+
+// Decrypt ENCRYPTED_API_KEY if present, otherwise fall back to ANTHROPIC_API_KEY
+function resolveApiKey() {
+  const encrypted = process.env.ENCRYPTED_API_KEY;
+  const encKey = process.env.ENCRYPTION_KEY;
+
+  if (encrypted && encKey) {
+    const parts = encrypted.split(":");
+    if (parts.length !== 4) throw new Error("ENCRYPTED_API_KEY format invalid");
+    const [saltHex, ivHex, authTagHex, dataHex] = parts;
+    const key = scryptSync(encKey, Buffer.from(saltHex, "hex"), 32);
+    const decipher = createDecipheriv("aes-256-gcm", key, Buffer.from(ivHex, "hex"));
+    decipher.setAuthTag(Buffer.from(authTagHex, "hex"));
+    return decipher.update(dataHex, "hex", "utf8") + decipher.final("utf8");
+  }
+
+  if (process.env.ANTHROPIC_API_KEY) return process.env.ANTHROPIC_API_KEY;
+  throw new Error("No API key found. Set ENCRYPTED_API_KEY + ENCRYPTION_KEY, or ANTHROPIC_API_KEY.");
+}
+
+const client = new Anthropic({ apiKey: resolveApiKey() });
 
 // Hash helper — passwords are stored as SHA-256 hex in .env
 function sha256(str) {
