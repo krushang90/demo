@@ -81,7 +81,13 @@ Generate a natural LinkedIn reply.`;
     const stream = client.messages.stream({
       model: "claude-opus-4-6",
       max_tokens: 512,
-      system: systemPrompt,
+      system: [
+        {
+          type: "text",
+          text: systemPrompt,
+          cache_control: { type: "ephemeral", ttl: "1h" },
+        },
+      ],
       messages: [{ role: "user", content: userMessage }],
     });
 
