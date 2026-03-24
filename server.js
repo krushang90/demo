@@ -148,7 +148,7 @@ Format it as a proper email with:
 - Subject: (a short, natural subject line)
 - A friendly greeting (e.g. "Hey [First Name]," or "Hi [First Name],")
 - 2 to 3 short paragraphs: acknowledge them, show relevance, soft CTA
-- A warm sign-off (e.g. "Cheers," or "Looking forward to connecting,") followed by the sender's name placeholder [Your Name]
+- A warm sign-off (e.g. "Cheers," or "Looking forward to connecting,") — end after the sign-off word, do not add a name placeholder
 Keep the tone friendly and human, not stiff or corporate.`,
 };
 
