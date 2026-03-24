@@ -359,6 +359,17 @@
     .recipient-field input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(10,102,194,0.1); }
     .recipient-field input::placeholder { color: #aaa; }
 
+    .char-counter {
+      display: none;
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--text-muted);
+      text-align: right;
+    }
+
+    .char-counter.visible { display: block; }
+    .char-counter.over { color: #c0392b; font-weight: 600; }
+
     .error-msg {
       background: #fff5f5;
       border: 1px solid #fcc;
@@ -432,6 +443,9 @@
       <button class="reply-type-btn" data-value="email" onclick="selectReplyType(this)">
         <span class="type-icon">📧</span>Email
       </button>
+      <button class="reply-type-btn" data-value="connection_request" onclick="selectReplyType(this)">
+        <span class="type-icon">🤝</span>Connection Request
+      </button>
     </div>
   </div>
 
@@ -475,6 +489,7 @@
       </button>
     </div>
     <div class="output-text" id="outputText"></div>
+    <div class="char-counter" id="charCounter">0 / 300 characters</div>
     <div class="output-actions">
       <button class="regen-btn" onclick="generate()">Regenerate</button>
       <button class="email-now-btn" id="emailNowBtn" onclick="openEmail()">
@@ -498,7 +513,8 @@
   const replyTypeLabels = {
     comment: "Post Comment Reply",
     dm: "Direct Message",
-    email: "Email"
+    email: "Email",
+    connection_request: "Connection Request"
   };
 
   function selectCompany(btn) {
@@ -512,8 +528,10 @@
     btn.classList.add("active");
     selectedReplyType = btn.dataset.value;
     const isEmail = selectedReplyType === "email";
+    const isConnection = selectedReplyType === "connection_request";
     document.getElementById("recipientField").classList.toggle("visible", isEmail);
     document.getElementById("emailNowBtn").classList.toggle("visible", isEmail && !!fullReply);
+    document.getElementById("charCounter").classList.toggle("visible", isConnection && !!fullReply);
   }
 
   async function generate() {
@@ -567,6 +585,7 @@
           if (data.text) {
             fullReply += data.text;
             outputText.innerHTML = escapeHtml(fullReply) + '<span class="cursor"></span>';
+            if (selectedReplyType === "connection_request") updateCharCounter();
           }
         }
       }
@@ -575,12 +594,23 @@
       if (selectedReplyType === "email") {
         document.getElementById("emailNowBtn").classList.add("visible");
       }
+      if (selectedReplyType === "connection_request") {
+        updateCharCounter();
+        document.getElementById("charCounter").classList.add("visible");
+      }
     } catch (err) {
       outputCard.classList.remove("visible");
       showError(err.message);
     } finally {
       setLoading(false);
     }
+  }
+
+  function updateCharCounter() {
+    const counter = document.getElementById("charCounter");
+    const len = fullReply.length;
+    counter.textContent = `${len} / 300 characters`;
+    counter.classList.toggle("over", len > 300);
   }
 
   function openEmail() {
